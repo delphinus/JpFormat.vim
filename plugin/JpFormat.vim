@@ -794,8 +794,8 @@ function! JpJoinStr(fline, lline, ...)
   let glist = []
   let catpattern = g:JpFormatMarker.'$'
   while loop - lines > 0
-    call add(glist, getline(fline+lines))
-    let indent = matchstr(getline(fline+lines), '^\s*')
+    call add(glist, s:getline(fline+lines))
+    let indent = matchstr(s:getline(fline+lines), '^\s*')
     if g:JpFormatIndent == 0
       let indent = ''
     endif
@@ -807,7 +807,7 @@ function! JpJoinStr(fline, lline, ...)
       endif
       let glist[idx] = substitute(glist[idx], catpattern, '' , '')
       let lines = lines + 1
-      let str = getline(fline+lines)
+      let str = s:getline(fline+lines)
       if indent != ''
         if fline+lines <= cline
           let delindent += strlen(matchstr(str, '^\s*'))
@@ -832,7 +832,7 @@ function! JpJoinStr(fline, lline, ...)
       if glist[idx] =~ eol
         break
       endif
-      let nstr = getline(fline+lines+1)
+      let nstr = s:getline(fline+lines+1)
       if nstr == '' || nstr =~ tol || nstr =~ b:JpFormatExclude
         break
       endif
@@ -847,6 +847,14 @@ function! JpJoinStr(fline, lline, ...)
   let lline = fline + lines - 1
   let ofs = a:0 ? delmarker : delindent + delmarker * crlen
   return [glist, lines, ofs]
+endfunction
+
+function! s:getline(line)
+    let whole = getline(a:line)
+    if exists('g:JpFormatInsertSpace') && g:JpFormatInsertSpace
+        let whole = InsertSpace(whole)
+    endif
+    return whole
 endfunction
 
 " リストを整形
@@ -1632,3 +1640,17 @@ function! s:EVLeave()
   endfor
 endfunction
 
+" 半角文字と全角文字の間に空白を挿入する
+function! InsertSpace(glist)
+    let kutouten = '、。（）'
+    let before_re = '\v([^[:graph:][:space:]'.kutouten.'])([[:graph:]])@='
+    let after_re = '\v([[:graph:]])([^[:graph:][:space:]'.kutouten.'])@='
+    let glist = a:glist
+    while match(glist, before_re) >= 0
+        let glist = substitute(glist, before_re, '\1 ', '')
+    endwhile
+    while match(glist, after_re) >= 0
+        let glist = substitute(glist, after_re, '\1 ', '')
+    endwhile
+    return glist
+endfunction
